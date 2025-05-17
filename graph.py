@@ -11,7 +11,7 @@ def calculate_compliance(C11, C12, C44):
     return S11, S12, S44
 
 # -------- Plotting Functions -------- #
-def plot_3d_property(property_name, S11, S12, S44, fig_width, fig_height, font_size):
+def plot_3d_property(property_name, S11, S12, S44):
     theta = np.linspace(0, np.pi, 100)
     phi = np.linspace(0, 2 * np.pi, 100)
     theta, phi = np.meshgrid(theta, phi)
@@ -40,29 +40,32 @@ def plot_3d_property(property_name, S11, S12, S44, fig_width, fig_height, font_s
 
     x, y, z = prop * l, prop * m, prop * n
 
-    fig = plt.figure(figsize=(fig_width, fig_height))
+    fig = plt.figure(figsize=(9, 7))  # Larger figure size
     ax = fig.add_subplot(111, projection='3d')
 
     surface = ax.plot_surface(
         x, y, z,
         facecolors=plt.cm.jet(prop / np.nanmax(prop)),
-        rstride=1, cstride=1, linewidth=0.3, edgecolor='k', alpha=0.95
+        rstride=1, cstride=1, linewidth=0.3, edgecolor='k', alpha=0.95,
     )
 
     mappable = plt.cm.ScalarMappable(cmap='jet')
     mappable.set_array(prop)
-    cbar = fig.colorbar(mappable, ax=ax, pad=0.15, shrink=0.7, aspect=15)
-    cbar.set_label(label, fontsize=font_size)
+    cbar = fig.colorbar(mappable, ax=ax, pad=0.10, shrink=0.7, aspect=15)  # Increased pad
+    cbar.set_label(label, fontsize=14)
 
-    ax.set_xlabel('X', labelpad=15, fontsize=font_size)
-    ax.set_ylabel('Y', labelpad=15, fontsize=font_size)
-    ax.set_zlabel('Z', labelpad=20, fontsize=font_size)
-    ax.tick_params(labelsize=font_size - 2)
+    ax.set_xlabel('X', labelpad=8, fontsize=15)  # Increased X label padding
+    ax.set_ylabel('Y', labelpad=8 , fontsize=15)  # Increased Y label padding
+    ax.set_zlabel('Z', labelpad=8, fontsize=15)  # Increased Z label padding
 
-    fig.tight_layout(pad=3.0)
+   # Manually set tick label sizes
+    ax.set_xticklabels([f"{tick:.1f}" for tick in ax.get_xticks()], fontsize=12)
+    ax.set_yticklabels([f"{tick:.1f}" for tick in ax.get_yticks()], fontsize=12)
+    ax.set_zticklabels([f"{tick:.1f}" for tick in ax.get_zticks()], fontsize=12)
+
     st.pyplot(fig)
 
-def plot_2d_property(property_name, S11, S12, S44, fig_width, fig_height, font_size):
+def plot_2d_property(property_name, S11, S12, S44):
     theta = np.linspace(0, 2*np.pi, 360)
     l = np.cos(theta)
     m = np.sin(theta)
@@ -86,21 +89,27 @@ def plot_2d_property(property_name, S11, S12, S44, fig_width, fig_height, font_s
     else:
         return
 
-    fig = plt.figure(figsize=(fig_width, fig_height))
+    fig = plt.figure(figsize=(7, 7))
     ax = fig.add_subplot(111, polar=True)
     ax.plot(theta, prop, color='b', linewidth=2)
     ax.fill(theta, prop, color='skyblue', alpha=0.4)
-    ax.set_title(label, fontsize=font_size + 2)
+    ax.set_title(label, fontsize=16)
     ax.set_theta_zero_location('N')
     ax.set_theta_direction(-1)
     ax.set_rlabel_position(45)
-    ax.tick_params(labelsize=font_size - 2)
+    # -------- Increase font size of radial tick labels -------- #
+    for label in ax.get_yticklabels():
+      label.set_fontsize(14)  # Adjust to your desired font size
+
+# -------- Increase font size of angular (theta) tick labels -------- #
+    for label in ax.get_xticklabels():
+      label.set_fontsize(14)
+
     st.pyplot(fig)
 
 # -------- Streamlit GUI -------- #
 st.title("Elastic Property Visualizer")
 
-# Inputs
 C11 = st.number_input("Insert value of C11:", format="%.5f", step=0.1)
 C12 = st.number_input("Insert value of C12:", format="%.5f", step=0.1)
 C44 = st.number_input("Insert value of C44:", format="%.5f", step=0.1)
@@ -108,20 +117,13 @@ C44 = st.number_input("Insert value of C44:", format="%.5f", step=0.1)
 property_name = st.selectbox("Select Property:", ["Young's modulus", "Shear modulus", "Poisson's ratio"])
 dimension = st.selectbox("Select Dimension:", ["2D", "3D"])
 
-# Graph style settings
-st.subheader("Customize Graph Appearance")
-fig_width = st.slider("Graph Width (inches)", 5.0, 15.0, 8.0)
-fig_height = st.slider("Graph Height (inches)", 5.0, 12.0, 7.0)
-font_size = st.slider("Font Size", 8, 28, 14)
-
-# Button
 if st.button("Generate Plot"):
     if C11 > 0 and C44 > 0 and C12 <= C11:
         S11, S12, S44 = calculate_compliance(C11, C12, C44)
         if dimension == "2D":
-            plot_2d_property(property_name, S11, S12, S44, fig_width, fig_height, font_size)
+            plot_2d_property(property_name, S11, S12, S44)
         else:
-            plot_3d_property(property_name, S11, S12, S44, fig_width, fig_height, font_size)
+            plot_3d_property(property_name, S11, S12, S44)
     else:
         st.error("Please enter valid values for C11, C12, and C44.")
         st.warning("Ensure C11 and C44 are positive and C12 <= C11.")
