@@ -13,7 +13,7 @@ def calculate_compliance(C11, C12, C44):
 # -------- Plotting Functions -------- #
 def plot_3d_property(property_name, S11, S12, S44):
     theta = np.linspace(0, np.pi, 100)
-    phi = np.linspace(0, 2*np.pi, 100)
+    phi = np.linspace(0, 2 * np.pi, 100)
     theta, phi = np.meshgrid(theta, phi)
 
     l = np.sin(theta) * np.cos(phi)
@@ -31,7 +31,7 @@ def plot_3d_property(property_name, S11, S12, S44):
         prop = 1 / inv_G
         label = "Shear Modulus (GPa)"
     elif property_name == "Poisson's ratio":
-        numerator = -(S11 + S12 - 2*S44) * (l**2 * m**2 + m**2 * n**2 + n**2 * l**2)
+        numerator = -(S11 + S12 - 2 * S44) * (l**2 * m**2 + m**2 * n**2 + n**2 * l**2)
         denominator = (S11 - S12)
         prop = numerator / denominator
         label = "Poisson's Ratio"
@@ -40,19 +40,25 @@ def plot_3d_property(property_name, S11, S12, S44):
 
     x, y, z = prop * l, prop * m, prop * n
 
-    fig = plt.figure(figsize=(8, 6))
+    fig = plt.figure(figsize=(9, 7))  # Larger figure size
     ax = fig.add_subplot(111, projection='3d')
+
     surface = ax.plot_surface(
-        x, y, z, facecolors=plt.cm.jet(prop / np.nanmax(prop)),
+        x, y, z,
+        facecolors=plt.cm.jet(prop / np.nanmax(prop)),
         rstride=1, cstride=1, linewidth=0.3, edgecolor='k', alpha=0.95
     )
+
     mappable = plt.cm.ScalarMappable(cmap='jet')
     mappable.set_array(prop)
-    cbar = fig.colorbar(mappable, ax=ax, shrink=0.6, aspect=10)
+    cbar = fig.colorbar(mappable, ax=ax, pad=0.15, shrink=0.7, aspect=15)  # Increased pad
     cbar.set_label(label, fontsize=14)
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
+
+    ax.set_xlabel('X', labelpad=15)
+    ax.set_ylabel('Y', labelpad=15)
+    ax.set_zlabel('Z', labelpad=20)  # Increased Z label padding
+
+    fig.tight_layout(pad=3.0)  # More breathing space
     st.pyplot(fig)
 
 def plot_2d_property(property_name, S11, S12, S44):
@@ -92,20 +98,20 @@ def plot_2d_property(property_name, S11, S12, S44):
 # -------- Streamlit GUI -------- #
 st.title("Elastic Property Visualizer")
 
-C11 = st.number_input("Insert value of C11:", min_value=0.0, step=1.0)
-C12 = st.number_input("Insert value of C12:", min_value=0.0, step=1.0)
-C44 = st.number_input("Insert value of C44:", min_value=0.0, step=1.0)
+C11 = st.number_input("Insert value of C11:", format="%.5f", step=0.1)
+C12 = st.number_input("Insert value of C12:", format="%.5f", step=0.1)
+C44 = st.number_input("Insert value of C44:", format="%.5f", step=0.1)
 
 property_name = st.selectbox("Select Property:", ["Young's modulus", "Shear modulus", "Poisson's ratio"])
 dimension = st.selectbox("Select Dimension:", ["2D", "3D"])
 
 if st.button("Generate Plot"):
-    if C11 > 0 and C12 >= 0 and C44 > 0:
+    if C11 > 0 and C44 > 0 and C12 <= C11:
         S11, S12, S44 = calculate_compliance(C11, C12, C44)
         if dimension == "2D":
             plot_2d_property(property_name, S11, S12, S44)
         else:
             plot_3d_property(property_name, S11, S12, S44)
     else:
-        st.error("Please enter valid positive values for C11, C12, and C44.")
-        st.warning("C12 should be less than or equal to C11.")  
+        st.error("Please enter valid values for C11, C12, and C44.")
+        st.warning("Ensure C11 and C44 are positive and C12 <= C11.")
